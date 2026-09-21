@@ -1,24 +1,36 @@
 from submission_parser import parse_submission
 from tally_service import get_submission
+from test_repository import get_test_by_tally_form_id
 
-FORM_ID = "obJN25"
-SUBMISSION_ID = "gbrAe9l"
+FORM_ID = "819b5x"
+SUBMISSION_ID = "EqY0JOl"
 
 
+# Get real submission from Tally
 submission = get_submission(
-    form_id=FORM_ID,
-    submission_id=SUBMISSION_ID
+    FORM_ID,
+    SUBMISSION_ID
 )
 
-answers = parse_submission(submission)
+print("✓ Submission fetched")
 
-print("=" * 70)
-print("PARSED ANSWERS")
-print("=" * 70)
 
-for question_id, answer in answers.items():
-    print(
-        f"{question_id} -> {answer}"
-    )
+# Get test + mapping from PostgreSQL
+test, question_mapping = get_test_by_tally_form_id(
+    FORM_ID
+)
 
-print("=" * 70)
+print("✓ Test loaded")
+
+print("Question mapping:")
+print(question_mapping)
+
+
+# Parse answers
+answers = parse_submission(
+    submission,
+    question_mapping
+)
+
+print("\nParsed answers:")
+print(answers)

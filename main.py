@@ -2,59 +2,58 @@ from fastmcp import FastMCP
 
 from schemas import Test
 from tally_service import create_test_form
+from test_repository import save_test
 
 mcp = FastMCP("GATE Test Creator")
 
 
 @mcp.tool()
 def create_test(test: dict) -> dict:
-    """
-    Create a GATE MCQ test using Tally.
 
-    The input must contain:
-    - title
-    - description
-    - questions
-
-    Each question must contain:
-    - id
-    - subject
-    - topic
-    - type
-    - question
-    - options
-    - correct_answer
-    - explanation
-    - marks
-    - negative_marks
-    - source_url
-    """
-
-    # -------------------------------------------------
-    # 1. Validate incoming test JSON
-    # -------------------------------------------------
+    # ---------------------------------------------------------
+    # 1. Validate test
+    # ---------------------------------------------------------
 
     validated_test = Test(**test)
 
-    # -------------------------------------------------
+    # ---------------------------------------------------------
     # 2. Create Tally form
-    # -------------------------------------------------
+    # ---------------------------------------------------------
 
-    result = create_test_form(validated_test)
+    result = create_test_form(
+        validated_test
+    )
 
-    # -------------------------------------------------
-    # 3. Extract useful information
-    # -------------------------------------------------
+    tally_form_id = result["id"]
 
-    test_id = result["id"]
+    question_mapping = result["question_mapping"]
 
-    form_url = f"https://tally.so/r/{test_id}"
+    # ---------------------------------------------------------
+    # 3. Save test in database
+    # ---------------------------------------------------------
+
+    database_test_id = save_test(
+        test=validated_test,
+        tally_form_id=tally_form_id,
+        question_mapping=question_mapping
+    )
+
+    # ---------------------------------------------------------
+    # 4. Return result
+    # ---------------------------------------------------------
+
+    form_url = (
+        f"https://tally.so/r/{tally_form_id}"
+    )
 
     return {
         "success": True,
-        "test_id": test_id,
+        "test_id": tally_form_id,
+        "database_test_id": database_test_id,
         "form_url": form_url,
-        "question_count": len(validated_test.questions)
+        "question_count": len(
+            validated_test.questions
+        )
     }
 
 

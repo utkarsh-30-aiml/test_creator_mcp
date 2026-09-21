@@ -76,17 +76,15 @@ question_mapping = {
 
 # Simulate student answers
 answers = {
-    "xNQrbd": "B. 12 bits",       # correct
-    "ZRV8kV": "B. Stack"          # incorrect
-
-    # Q3 unanswered
+    1: "C. 20 bits",
+    2: "A. Page table",
+    3: None
 }
 
 
 result = evaluate_test(
     test=test,
-    answers=answers,
-    question_mapping=question_mapping
+    answers=answers
 )
 
 

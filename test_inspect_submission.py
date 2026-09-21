@@ -15,14 +15,10 @@ def parse_submission(
     }
     """
 
-    submission_data = submission.get(
-        "submission"
-    )
+    submission_data = submission.get("submission")
 
     if not submission_data:
-        raise ValueError(
-            "Submission data not found."
-        )
+        raise ValueError("Submission data not found.")
 
     responses = submission_data.get(
         "responses",
@@ -34,14 +30,19 @@ def parse_submission(
         []
     )
 
-    # Tally question ID -> blockGroupUuid
+    # ---------------------------------------------
+    # Build:
+    #
+    # Tally question ID
+    #        ↓
+    # Tally blockGroupUuid
+    # ---------------------------------------------
+
     question_id_to_group_uuid = {}
 
     for question in tally_questions:
 
-        tally_question_id = question.get(
-            "id"
-        )
+        tally_question_id = question.get("id")
 
         fields = question.get(
             "fields",
@@ -54,15 +55,20 @@ def parse_submission(
                 "blockGroupUuid"
             )
 
-            if (
-                tally_question_id
-                and block_group_uuid
-            ):
+            if tally_question_id and block_group_uuid:
+
                 question_id_to_group_uuid[
                     tally_question_id
                 ] = block_group_uuid
 
-    # blockGroupUuid -> our question ID
+    # ---------------------------------------------
+    # Build reverse mapping:
+    #
+    # Tally blockGroupUuid
+    #        ↓
+    # Our question ID
+    # ---------------------------------------------
+
     group_uuid_to_question_id = {
         tally_group_uuid: question_id
         for question_id, tally_group_uuid
@@ -70,6 +76,10 @@ def parse_submission(
     }
 
     parsed_answers = {}
+
+    # ---------------------------------------------
+    # Parse submitted answers
+    # ---------------------------------------------
 
     for response in responses:
 
