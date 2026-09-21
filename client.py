@@ -1,11 +1,12 @@
 import asyncio
+from pathlib import Path
 
 from fastmcp import Client
 
 
 async def main():
 
-    client = Client("main.py")
+    client = Client(Path("main.py"))
 
     print("=" * 70)
     print("GATE TEST CREATOR MCP CLIENT")

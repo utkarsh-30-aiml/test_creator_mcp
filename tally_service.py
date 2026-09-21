@@ -114,17 +114,15 @@ def create_mcq_option(
 # QUESTION → TALLY BLOCKS
 # ---------------------------------------------------------
 
-def create_mcq_blocks(question: Question) -> list[dict]:
-    """
-    Convert one Question object into Tally blocks.
-    """
+def create_mcq_blocks(
+    question: Question
+) -> tuple[list[dict], str]:
 
     question_group_uuid = new_uuid()
     multiple_choice_group_uuid = new_uuid()
 
     blocks = []
 
-    # Question text
     blocks.append(
         create_question_title_block(
             question=question.question,
@@ -132,14 +130,11 @@ def create_mcq_blocks(question: Question) -> list[dict]:
         )
     )
 
-    # Options
     options = list(question.options.items())
     total_options = len(options)
 
     for index, (letter, option_text) in enumerate(options):
 
-        # Tally displays the option text exactly as supplied.
-        # We add the option letter here.
         option = f"{letter}. {option_text}"
 
         blocks.append(
@@ -151,28 +146,27 @@ def create_mcq_blocks(question: Question) -> list[dict]:
             )
         )
 
-    return blocks
+    return blocks, multiple_choice_group_uuid
 
 
 # ---------------------------------------------------------
 # TEST → COMPLETE TALLY FORM
 # ---------------------------------------------------------
 
-def create_test_blocks(test: Test) -> list[dict]:
-    """
-    Convert the complete Test object into Tally blocks.
-    """
+def create_test_blocks(
+    test: Test
+) -> tuple[list[dict], dict[int, str]]:
 
     blocks = []
 
-    # Form title
+    question_mapping = {}
+
     blocks.append(
         create_form_title_block(
             test.title
         )
     )
 
-    # Description
     if test.description:
         blocks.append(
             create_description_block(
@@ -180,7 +174,6 @@ def create_test_blocks(test: Test) -> list[dict]:
             )
         )
 
-    # Questions
     for question in test.questions:
 
         if question.type != "MCQ":
@@ -188,12 +181,19 @@ def create_test_blocks(test: Test) -> list[dict]:
                 f"Unsupported question type: {question.type}"
             )
 
-        blocks.extend(
-            create_mcq_blocks(question)
+        question_blocks, group_uuid = create_mcq_blocks(
+            question
         )
 
-    return blocks
+        blocks.extend(question_blocks)
 
+        # -----------------------------------------
+        # Store our Question ID → Tally field UUID
+        # -----------------------------------------
+
+        question_mapping[question.id] = group_uuid
+
+    return blocks, question_mapping
 
 # ---------------------------------------------------------
 # CREATE TALLY FORM
@@ -201,7 +201,7 @@ def create_test_blocks(test: Test) -> list[dict]:
 
 def create_test_form(test: Test) -> dict:
 
-    blocks = create_test_blocks(test)
+    blocks, _question_mapping = create_test_blocks(test)
 
     payload = {
         "status": "PUBLISHED",
@@ -244,6 +244,143 @@ def create_test_form(test: Test) -> dict:
         raise RuntimeError(
             "Tally rejected the request.\n\n"
             f"{response.text}"
+        )
+
+    if response.status_code == 429:
+        raise RuntimeError(
+            "Tally API rate limit exceeded."
+        )
+
+    if not response.is_success:
+        raise RuntimeError(
+            f"Tally API request failed.\n"
+            f"Status: {response.status_code}\n"
+            f"Response: {response.text}"
+        )
+
+    result = response.json()
+
+    result["question_mapping"] = _question_mapping
+
+    return result
+
+
+def get_form_submissions(form_id: str) -> dict:
+    """
+    Retrieve submissions for a Tally form.
+    """
+
+    url = f"{TALLY_API_BASE_URL}/forms/{form_id}/submissions"
+
+    response = httpx.get(
+        url,
+        headers=get_headers(),
+        timeout=30.0
+    )
+
+    if response.status_code == 401:
+        raise RuntimeError(
+            "Authentication failed. Check TALLY_API_KEY."
+        )
+
+    if response.status_code == 403:
+        raise RuntimeError(
+            "Tally API permission denied."
+        )
+
+    if response.status_code == 404:
+        raise RuntimeError(
+            f"Tally form '{form_id}' was not found."
+        )
+
+    if response.status_code == 429:
+        raise RuntimeError(
+            "Tally API rate limit exceeded."
+        )
+
+    if not response.is_success:
+        raise RuntimeError(
+            f"Tally API request failed.\n"
+            f"Status: {response.status_code}\n"
+            f"Response: {response.text}"
+        )
+
+    return response.json()
+
+def get_submission(
+    form_id: str,
+    submission_id: str
+) -> dict:
+    """
+    Retrieve one specific Tally submission.
+    """
+
+    url = (
+        f"{TALLY_API_BASE_URL}/forms/"
+        f"{form_id}/submissions/{submission_id}"
+    )
+
+    response = httpx.get(
+        url,
+        headers=get_headers(),
+        timeout=30.0
+    )
+
+    if response.status_code == 401:
+        raise RuntimeError(
+            "Authentication failed. Check TALLY_API_KEY."
+        )
+
+    if response.status_code == 403:
+        raise RuntimeError(
+            "Tally API permission denied."
+        )
+
+    if response.status_code == 404:
+        raise RuntimeError(
+            "Form or submission was not found."
+        )
+
+    if response.status_code == 429:
+        raise RuntimeError(
+            "Tally API rate limit exceeded."
+        )
+
+    if not response.is_success:
+        raise RuntimeError(
+            f"Tally API request failed.\n"
+            f"Status: {response.status_code}\n"
+            f"Response: {response.text}"
+        )
+
+    return response.json()
+
+def get_form(form_id: str) -> dict:
+    """
+    Retrieve the complete Tally form.
+    """
+
+    url = f"{TALLY_API_BASE_URL}/forms/{form_id}"
+
+    response = httpx.get(
+        url,
+        headers=get_headers(),
+        timeout=30.0
+    )
+
+    if response.status_code == 401:
+        raise RuntimeError(
+            "Authentication failed. Check TALLY_API_KEY."
+        )
+
+    if response.status_code == 403:
+        raise RuntimeError(
+            "Tally API permission denied."
+        )
+
+    if response.status_code == 404:
+        raise RuntimeError(
+            f"Tally form '{form_id}' was not found."
         )
 
     if response.status_code == 429:
