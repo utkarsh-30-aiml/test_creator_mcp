@@ -1,3 +1,32 @@
+import os
+import sys
+
+# ============================================================
+# MCP STDIO / WINDOWS UTF-8 CONFIGURATION
+# ============================================================
+
+# These environment variables help subprocesses use UTF-8.
+os.environ.setdefault("PYTHONUTF8", "1")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+# stderr is safe for diagnostics because stdout is reserved
+# exclusively for MCP JSON-RPC communication.
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(
+        encoding="utf-8",
+        errors="strict"
+    )
+
+# stdout is used by FastMCP's stdio transport.
+# Reconfigure it to UTF-8, but NEVER write application logs
+# or debug messages to stdout.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(
+        encoding="utf-8",
+        errors="strict"
+    )
+
+
 from fastmcp import FastMCP
 
 from evaluator import evaluate_test

@@ -1,11 +1,13 @@
 import json
 import os
+import sys
 import uuid
 
 import httpx
 from dotenv import load_dotenv
 
 from schemas import Question, Test
+from tally_webhook_setup import connect_tally_webhook
 
 load_dotenv()
 
@@ -200,67 +202,50 @@ def create_test_blocks(
 # ---------------------------------------------------------
 
 def create_test_form(test: Test) -> dict:
-
     blocks, _question_mapping = create_test_blocks(test)
 
     payload = {
         "status": "PUBLISHED",
-        "blocks": blocks
+        "blocks": blocks,
     }
 
-    print()
-    print("=" * 70)
-    print("REQUEST PAYLOAD")
-    print("=" * 70)
-
-    print(
-        json.dumps(
-            payload,
-            indent=2,
-            ensure_ascii=False
-        )
-    )
-
-    url = f"{TALLY_API_BASE_URL}/forms"
-
     response = httpx.post(
-        url,
+        f"{TALLY_API_BASE_URL}/forms",
         headers=get_headers(),
         json=payload,
         timeout=30.0
     )
 
-    if response.status_code == 401:
-        raise RuntimeError(
-            "Authentication failed. Check TALLY_API_KEY."
-        )
-
-    if response.status_code == 403:
-        raise RuntimeError(
-            "Tally API permission denied."
-        )
-
-    if response.status_code == 400:
-        raise RuntimeError(
-            "Tally rejected the request.\n\n"
-            f"{response.text}"
-        )
-
-    if response.status_code == 429:
-        raise RuntimeError(
-            "Tally API rate limit exceeded."
-        )
-
-    if not response.is_success:
-        raise RuntimeError(
-            f"Tally API request failed.\n"
-            f"Status: {response.status_code}\n"
-            f"Response: {response.text}"
-        )
+    response.raise_for_status()
 
     result = response.json()
 
+    # ---------------------------------------------------------
+    # Automatically connect Tally webhook
+    # ---------------------------------------------------------
+
+    form_id = result["id"]
+
+    print(
+        f"Connecting webhook for Tally form {form_id}...",
+        file=sys.stderr
+    )
+
+    webhook_result = connect_tally_webhook(form_id)
+
+    if not webhook_result.get("success"):
+        raise RuntimeError(
+            f"Failed to connect Tally webhook: {webhook_result}"
+        )
+
+    print(
+        f"Webhook connected for Tally form {form_id}.",
+        file=sys.stderr
+    )
+
     result["question_mapping"] = _question_mapping
+
+    result["webhook"] = webhook_result
 
     return result
 

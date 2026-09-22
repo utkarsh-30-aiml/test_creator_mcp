@@ -2,14 +2,30 @@ import json
 from pathlib import Path
 
 from fastmcp import Client
+from fastmcp.client.transports import StdioTransport
 
 SERVER_PATH = Path(__file__).parent / "main.py"
 
 
 async def main():
 
+    transport = StdioTransport(
+    command="uv",
+    args=[
+        "--directory",
+        str(SERVER_PATH.parent),
+        "run",
+        "python",
+        "main.py",
+    ],
+    env={
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+    },
+)
+
     async with Client(
-        str(SERVER_PATH)
+        transport
     ) as client:
 
         print("=" * 70)

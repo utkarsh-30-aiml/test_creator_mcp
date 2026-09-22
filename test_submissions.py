@@ -2,7 +2,7 @@ import json
 
 from tally_service import get_form_submissions
 
-FORM_ID = "RGOelP"
+FORM_ID = "RGOANQ"
 
 
 print("=" * 70)

@@ -10,6 +10,8 @@ dependencies = [
     "google-auth-httplib2",
     "google-auth-oauthlib",
     "httpx>=0.28.1",
+    "playright>=0.1.1",
+    "playwright>=1.63.0",
     "psycopg2>=2.9.13",
     "pydantic",
     "python-dotenv",

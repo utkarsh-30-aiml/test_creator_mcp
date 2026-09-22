@@ -7,6 +7,7 @@ def evaluate_test(
 ) -> dict:
 
     results = []
+    wrong_questions = []
 
     total_score = 0.0
     correct_count = 0
@@ -39,14 +40,25 @@ def evaluate_test(
 
         total_score += marks_obtained
 
-        results.append({
+        result = {
             "question_id": question.id,
+            "subject": question.subject,
+            "topic": question.topic,
+            "question": question.question,
+            "options": question.options,
             "student_answer": student_answer,
             "correct_answer": question.correct_answer,
             "status": status,
             "marks": marks_obtained,
-            "explanation": question.explanation
-        })
+            "explanation": question.explanation,
+            "source_url": question.source_url,
+        }
+
+        results.append(result)
+
+        # Keep complete details of questions answered incorrectly
+        if status == "incorrect":
+            wrong_questions.append(result)
 
     return {
         "total_score": round(total_score, 2),
@@ -54,5 +66,6 @@ def evaluate_test(
         "incorrect": incorrect_count,
         "unanswered": unanswered_count,
         "total_questions": len(test.questions),
-        "results": results
+        "results": results,
+        "wrong_questions": wrong_questions,
     }
