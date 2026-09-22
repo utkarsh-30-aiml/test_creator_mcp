@@ -1,6 +1,6 @@
 from database import get_connection
 from schemas import Question, Test
-
+import json
 
 def save_test(
     test: Test,
@@ -448,18 +448,18 @@ def get_result_by_submission_id(
         ) = row
 
         return {
-            "result_id": result_id,
-            "submission_id": submission_id,
-            "total_score": total_score,
-            "correct": correct,
-            "incorrect": incorrect,
-            "unanswered": unanswered,
-            "total_questions": total_questions,
-            "result": result_json,
-            "created_at": created_at.isoformat()
-                if created_at
-                else None
-        }
+    "result_id": result_id,
+    "submission_id": submission_id,
+    "total_score": total_score,
+    "correct": correct,
+    "incorrect": incorrect,
+    "unanswered": unanswered,
+    "total_questions": total_questions,
+    "result": result_json,
+    "created_at": created_at.isoformat()
+        if created_at
+        else None
+}
 
     finally:
         cursor.close()
